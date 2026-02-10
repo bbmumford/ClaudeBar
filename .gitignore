@@ -1,0 +1,29 @@
+# Build output
+build/
+*.exe
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.lnk
+
+# Go
+vendor/
+
+# Debug/test tools with hardcoded credentials
+cmd/apitest/
+cmd/debug/
+
+# Claude Code project files
+.claude/
+
+# Config with secrets
+config.json
