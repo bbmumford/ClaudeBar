@@ -176,6 +176,36 @@ func (s *SettingsDialog) Show() {
 		container.NewGridWithColumns(3, sessionCheck, weeklyCheck, resetCheck),
 	)
 
+	// --- Notifications ---
+	notifLabel := widget.NewLabel("Notifications")
+	notifLabel.TextStyle = fyne.TextStyle{Bold: true}
+
+	notifCheck := widget.NewCheck("Enable usage alerts", func(checked bool) {
+		s.config.NotificationsEnabled = checked
+	})
+	notifCheck.SetChecked(s.config.NotificationsEnabled)
+
+	thresh50 := widget.NewCheck("50%", func(checked bool) {
+		s.config.ToggleAlertThreshold(50)
+	})
+	thresh50.SetChecked(s.config.HasAlertThreshold(50))
+
+	thresh75 := widget.NewCheck("75%", func(checked bool) {
+		s.config.ToggleAlertThreshold(75)
+	})
+	thresh75.SetChecked(s.config.HasAlertThreshold(75))
+
+	thresh90 := widget.NewCheck("90%", func(checked bool) {
+		s.config.ToggleAlertThreshold(90)
+	})
+	thresh90.SetChecked(s.config.HasAlertThreshold(90))
+
+	notifSection := container.NewVBox(
+		notifLabel,
+		notifCheck,
+		container.NewHBox(widget.NewLabel("Alert at:"), thresh50, thresh75, thresh90),
+	)
+
 	// --- Buttons ---
 	saveBtn := widget.NewButton("Save", func() {
 		opacity, _ := opacityBinding.Get()
@@ -210,6 +240,8 @@ func (s *SettingsDialog) Show() {
 		displaySection,
 		widget.NewSeparator(),
 		visSection,
+		widget.NewSeparator(),
+		notifSection,
 		widget.NewSeparator(),
 		buttons,
 	)

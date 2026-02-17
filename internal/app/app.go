@@ -36,8 +36,10 @@ type App struct {
 	running           bool
 	refreshTimer      *time.Ticker
 	stopChan          chan struct{}
-	consecutiveErrors int
-	rateLimitBackoff  time.Duration
+	consecutiveErrors    int
+	rateLimitBackoff     time.Duration
+	lastSessionThreshold float64 // last threshold that triggered a session notification
+	lastWeeklyThreshold  float64 // last threshold that triggered a weekly notification
 }
 
 // Run starts the application
@@ -286,6 +288,61 @@ func (a *App) fetchUsage() {
 		a.overlay.UpdateUsage(usage)
 		a.tray.UpdateUsage(usage)
 	})
+
+	// Check notification thresholds
+	a.checkAndNotify(usage)
+}
+
+// checkAndNotify sends OS notifications when usage crosses configured thresholds.
+// Only notifies once per threshold crossing; resets when usage drops below.
+func (a *App) checkAndNotify(usage *api.UsageData) {
+	if !a.config.NotificationsEnabled || len(a.config.AlertThresholds) == 0 {
+		return
+	}
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	// Check session (5-hour) usage
+	sessionCrossed := highestCrossedThreshold(usage.FiveHour.Utilization, a.config.AlertThresholds)
+	if sessionCrossed > a.lastSessionThreshold {
+		a.lastSessionThreshold = sessionCrossed
+		notif := fyne.NewNotification(
+			"ClaudeBar: High Session Usage",
+			fmt.Sprintf("Session usage at %.0f%% (threshold: %.0f%%)", usage.FiveHour.Utilization, sessionCrossed),
+		)
+		a.fyneApp.SendNotification(notif)
+		log.Printf("Notification: session usage %.0f%% crossed %.0f%% threshold", usage.FiveHour.Utilization, sessionCrossed)
+	} else if sessionCrossed < a.lastSessionThreshold {
+		// Usage dropped (e.g., after reset) — allow re-notification
+		a.lastSessionThreshold = sessionCrossed
+	}
+
+	// Check weekly (7-day) usage
+	weeklyCrossed := highestCrossedThreshold(usage.SevenDay.Utilization, a.config.AlertThresholds)
+	if weeklyCrossed > a.lastWeeklyThreshold {
+		a.lastWeeklyThreshold = weeklyCrossed
+		notif := fyne.NewNotification(
+			"ClaudeBar: High Weekly Usage",
+			fmt.Sprintf("Weekly usage at %.0f%% (threshold: %.0f%%)", usage.SevenDay.Utilization, weeklyCrossed),
+		)
+		a.fyneApp.SendNotification(notif)
+		log.Printf("Notification: weekly usage %.0f%% crossed %.0f%% threshold", usage.SevenDay.Utilization, weeklyCrossed)
+	} else if weeklyCrossed < a.lastWeeklyThreshold {
+		a.lastWeeklyThreshold = weeklyCrossed
+	}
+}
+
+// highestCrossedThreshold returns the highest threshold value that utilization
+// meets or exceeds. Returns 0 if no threshold is crossed.
+func highestCrossedThreshold(utilization float64, thresholds []float64) float64 {
+	var highest float64
+	for _, t := range thresholds {
+		if utilization >= t && t > highest {
+			highest = t
+		}
+	}
+	return highest
 }
 
 // handleSnapHotkey handles snap hotkey events.

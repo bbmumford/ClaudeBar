@@ -18,8 +18,10 @@ type Config struct {
 	OverlayPosition string         `json:"overlay_position"` // "left", "right", "top", "floating"
 	OverlayX        int            `json:"overlay_x"`
 	OverlayY        int            `json:"overlay_y"`
-	VisibleStats    VisibleStats   `json:"visible_stats"`
-	AutoStart       bool           `json:"auto_start"`
+	VisibleStats         VisibleStats `json:"visible_stats"`
+	AutoStart            bool         `json:"auto_start"`
+	NotificationsEnabled bool         `json:"notifications_enabled"`
+	AlertThresholds      []float64    `json:"alert_thresholds"`
 }
 
 // VisibleStats controls which stats are shown
@@ -52,7 +54,9 @@ func Default() *Config {
 			WeeklyUsage:  true,
 			ResetTime:    true,
 		},
-		AutoStart: false,
+		AutoStart:            false,
+		NotificationsEnabled: true,
+		AlertThresholds:      []float64{50, 75, 90},
 	}
 }
 
@@ -134,7 +138,16 @@ func (c *Config) Load() error {
 		return err
 	}
 
-	return json.Unmarshal(data, c)
+	if err := json.Unmarshal(data, c); err != nil {
+		return err
+	}
+
+	// Apply defaults for fields missing from older config files
+	if c.AlertThresholds == nil {
+		c.AlertThresholds = []float64{50, 75, 90}
+	}
+
+	return nil
 }
 
 // Save writes the config to disk
@@ -200,6 +213,40 @@ func (c *Config) IsStatVisible(statType string) bool {
 	default:
 		return true
 	}
+}
+
+// SetNotificationsEnabled updates notification setting and saves
+func (c *Config) SetNotificationsEnabled(enabled bool) error {
+	c.NotificationsEnabled = enabled
+	return c.Save()
+}
+
+// SetAlertThresholds updates the alert threshold list and saves
+func (c *Config) SetAlertThresholds(thresholds []float64) error {
+	c.AlertThresholds = thresholds
+	return c.Save()
+}
+
+// HasAlertThreshold checks if a specific threshold is in the list
+func (c *Config) HasAlertThreshold(t float64) bool {
+	for _, v := range c.AlertThresholds {
+		if v == t {
+			return true
+		}
+	}
+	return false
+}
+
+// ToggleAlertThreshold adds or removes a threshold and saves
+func (c *Config) ToggleAlertThreshold(t float64) error {
+	for i, v := range c.AlertThresholds {
+		if v == t {
+			c.AlertThresholds = append(c.AlertThresholds[:i], c.AlertThresholds[i+1:]...)
+			return c.Save()
+		}
+	}
+	c.AlertThresholds = append(c.AlertThresholds, t)
+	return c.Save()
 }
 
 // ToggleStat toggles visibility of a stat type

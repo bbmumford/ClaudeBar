@@ -1,24 +1,12 @@
-<p align="center">
-  <img src="assets/icons/app.png" alt="ClaudeBar Icon" width="80" />
-</p>
+# ClaudeBar
 
-<h1 align="center">ClaudeBar</h1>
-
-<p align="center">
-  A desktop system tray app that monitors your <a href="https://claude.ai">Claude AI</a> usage limits in real-time with a floating always-on-top overlay.
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Go-1.24-blue" alt="Go" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
-  <img src="https://img.shields.io/badge/Platform-Windows-blue" alt="Platform" />
-</p>
-
-<p align="center">
-  <img src="assets/screen.png" alt="ClaudeBar Screenshot" />
-</p>
+A desktop system tray app that monitors your [Claude AI](https://claude.ai) usage limits in real-time with a floating always-on-top overlay.
 
 Built with Go and [Fyne](https://fyne.io/) for cross-platform support. Primary target is Windows, with Linux and macOS stubs in place.
+
+![Go](https://img.shields.io/badge/Go-1.24-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Platform](https://img.shields.io/badge/Platform-Windows-blue)
 
 ## Features
 
